@@ -83,6 +83,16 @@ class AudioPlayer {
         this.isPlaying = false;
         this.bufferDuration = 0;
     }
+
+    // 現在の再生位置を取得（秒）
+    getCurrentPlaybackTime() {
+        if (!this.isPlaying || this.startTime === null || this.bufferDuration === 0) {
+            return null;
+        }
+        const elapsed = this.audioContext.currentTime - this.startTime;
+        // バッファの範囲内にクリップ
+        return Math.max(0, Math.min(this.bufferDuration, elapsed));
+    }
 }
 
 export { AudioPlayer };

@@ -11,6 +11,7 @@ class OriginalWaveformViewer {
         this.dragType = null; // 'start' or 'end'
         this.onRangeChange = null; // コールバック関数
         this.isPlaybackActive = false; // 再生中かどうか
+        this.currentPlaybackTime = null; // 現在の再生位置（秒）
         
         this.setupEventListeners();
     }
@@ -18,6 +19,14 @@ class OriginalWaveformViewer {
     // 再生状態を設定
     setPlaybackActive(active) {
         this.isPlaybackActive = active;
+        if (!active) {
+            this.currentPlaybackTime = null;
+        }
+    }
+
+    // 再生位置を設定
+    setCurrentPlaybackTime(time) {
+        this.currentPlaybackTime = time;
     }
 
     lockScroll() {
@@ -331,6 +340,17 @@ class OriginalWaveformViewer {
         
         // 範囲指定UIを描画
         this.drawRangeUI(ctx, startX, endX, height, timeScale);
+        
+        // 再生位置ラインを描画
+        if (this.currentPlaybackTime !== null && this.currentPlaybackTime >= 0 && this.currentPlaybackTime <= duration) {
+            const playbackX = this.currentPlaybackTime * timeScale;
+            ctx.strokeStyle = '#ff8c00'; // オレンジ色
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(playbackX, 0);
+            ctx.lineTo(playbackX, height);
+            ctx.stroke();
+        }
         
         // タイムルーラーを描画
         this.drawTimeRuler(duration, width);

@@ -66,10 +66,20 @@ class AudioToMidiApp {
         
         const animate = () => {
             if (this.audioPlayer && this.audioPlayer.isPlaying) {
+                // 再生位置を取得して表示
+                const playbackTime = this.audioPlayer.getCurrentPlaybackTime();
+                if (playbackTime !== null && this.originalWaveformViewer) {
+                    // 選択範囲のバッファでの再生位置を、元のバッファ全体での位置に変換
+                    const absolutePlaybackTime = this.useRangeStart + playbackTime;
+                    this.originalWaveformViewer.setCurrentPlaybackTime(absolutePlaybackTime);
+                }
                 this.drawWaveform();
                 this.animationFrameId = requestAnimationFrame(animate);
             } else {
                 this.animationFrameId = null;
+                if (this.originalWaveformViewer) {
+                    this.originalWaveformViewer.setCurrentPlaybackTime(null);
+                }
             }
         };
         if (this.animationFrameId === null) {
@@ -80,6 +90,7 @@ class AudioToMidiApp {
     stopPlaybackAnimation() {
         if (this.originalWaveformViewer) {
             this.originalWaveformViewer.setPlaybackActive(false);
+            this.originalWaveformViewer.setCurrentPlaybackTime(null);
         }
         
         if (this.animationFrameId !== null) {
