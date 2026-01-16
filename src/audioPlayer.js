@@ -4,7 +4,6 @@ class AudioPlayer {
         this.audioContext = audioContext;
         this.sourceNode = null;
         this.gainNode = null;
-        this.analyser = null;
         this.startTime = null;
         this.isPlaying = false;
         this.bufferDuration = 0;
@@ -29,17 +28,13 @@ class AudioPlayer {
             // ソースノードを作成
             this.sourceNode = this.audioContext.createBufferSource();
             this.gainNode = this.audioContext.createGain();
-            this.analyser = this.audioContext.createAnalyser();
-            this.analyser.fftSize = 256;
-            this.analyser.smoothingTimeConstant = 0.8;
 
             this.sourceNode.buffer = audioBuffer;
             this.sourceNode.loop = false; // ループしない（選択範囲を1回再生）
 
-            // 接続: source -> gain -> analyser -> destination
+            // 接続: source -> gain -> destination
             this.sourceNode.connect(this.gainNode);
-            this.gainNode.connect(this.analyser);
-            this.analyser.connect(this.audioContext.destination);
+            this.gainNode.connect(this.audioContext.destination);
 
             // 再生開始
             const startAt = this.audioContext.currentTime;
@@ -81,30 +76,12 @@ class AudioPlayer {
                 // 既に切断されている場合など
             }
         }
-        
-        if (this.analyser) {
-            try {
-                this.analyser.disconnect();
-            } catch (e) {
-                // 既に切断されている場合など
-            }
-        }
 
         this.sourceNode = null;
         this.gainNode = null;
-        this.analyser = null;
         this.startTime = null;
         this.isPlaying = false;
         this.bufferDuration = 0;
-    }
-
-    getCurrentPlaybackTime() {
-        if (!this.isPlaying || this.startTime === null || this.bufferDuration === 0) {
-            return null;
-        }
-        const elapsed = this.audioContext.currentTime - this.startTime;
-        // バッファの範囲内にクリップ
-        return Math.max(0, Math.min(this.bufferDuration, elapsed));
     }
 }
 
