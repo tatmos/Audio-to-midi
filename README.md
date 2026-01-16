@@ -56,6 +56,27 @@ npm run preview
 
 ビルド後の結果をプレビューできます。
 
+## GitHub Pagesへのデプロイ
+
+このプロジェクトはGitHub Pagesでサブディレクトリ（`/Audio-to-midi/`）でも動作するように設定されています。
+
+### 自動デプロイ（推奨）
+
+1. GitHubリポジトリのSettings → Pagesに移動
+2. Sourceを「GitHub Actions」に設定
+3. `main`ブランチにプッシュすると自動的にビルド＆デプロイされます
+
+### 手動デプロイ
+
+```bash
+# ビルド
+npm run build
+
+# dist/ディレクトリの内容をGitHub Pagesのブランチにデプロイ
+```
+
+**注意**: 手動デプロイの場合は、GitHub Pagesの設定で`dist/`ディレクトリを公開するように設定してください。
+
 ## 使い方
 
 1. 「WAVファイルをアップロード」ボタンから音声ファイルを選択（またはドラッグ&ドロップ）

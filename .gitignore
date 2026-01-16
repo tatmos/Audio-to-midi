@@ -6,6 +6,9 @@ package-lock.json
 dist/
 *.local
 
+# GitHub Pages
+.github/workflows/.DS_Store
+
 # IDE
 .vscode/
 .idea/
