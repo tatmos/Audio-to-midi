@@ -1,9 +1,7 @@
-// 音声処理・生成クラス（ファイル保存専用）
+// 音声処理クラス
 class AudioProcessor {
     constructor(audioContext) {
         this.audioContext = audioContext;
-        this.track1Processor = new Track1Processor(audioContext);
-        this.track2Processor = new Track2Processor(audioContext);
     }
 
     // 元波形から指定範囲を抽出
@@ -39,6 +37,7 @@ class AudioProcessor {
         return extractedBuffer;
     }
 
+    // AudioBufferをWAV形式に変換（デバッグ用）
     bufferToWav(buffer) {
         const length = buffer.length;
         const numChannels = buffer.numberOfChannels;
@@ -85,105 +84,4 @@ class AudioProcessor {
 
         return arrayBuffer;
     }
-
-
-    // バッファをステレオ（2チャンネル）に変換
-    convertToStereo(audioBuffer) {
-        if (!audioBuffer) return null;
-        
-        const sampleRate = audioBuffer.sampleRate;
-        const numChannels = audioBuffer.numberOfChannels;
-        const length = audioBuffer.length;
-        
-        // 既にステレオの場合はそのまま返す
-        if (numChannels === 2) {
-            return audioBuffer;
-        }
-        
-        // ステレオバッファを作成
-        const stereoBuffer = this.audioContext.createBuffer(2, length, sampleRate);
-        
-        if (numChannels === 1) {
-            // モノラルからステレオに変換（同じチャンネルを2つにコピー）
-            const monoData = audioBuffer.getChannelData(0);
-            const leftData = stereoBuffer.getChannelData(0);
-            const rightData = stereoBuffer.getChannelData(1);
-            
-            for (let i = 0; i < length; i++) {
-                leftData[i] = monoData[i];
-                rightData[i] = monoData[i];
-            }
-        } else {
-            // 3チャンネル以上の場合は、最初の2チャンネルを使用
-            const leftData = stereoBuffer.getChannelData(0);
-            const rightData = stereoBuffer.getChannelData(1);
-            
-            if (numChannels >= 1) {
-                const inputLeft = audioBuffer.getChannelData(0);
-                for (let i = 0; i < length; i++) {
-                    leftData[i] = inputLeft[i];
-                }
-            }
-            
-            if (numChannels >= 2) {
-                const inputRight = audioBuffer.getChannelData(1);
-                for (let i = 0; i < length; i++) {
-                    rightData[i] = inputRight[i];
-                }
-            } else {
-                // 右チャンネルがない場合は左チャンネルをコピー
-                const inputLeft = audioBuffer.getChannelData(0);
-                for (let i = 0; i < length; i++) {
-                    rightData[i] = inputLeft[i];
-                }
-            }
-        }
-        
-        return stereoBuffer;
-    }
-
-    // トラック1と2をミックスしたバッファを生成
-    mixBuffers(track1Buffer, track2Buffer) {
-        if (!track1Buffer || !track2Buffer) return null;
-        
-        const sampleRate = track1Buffer.sampleRate;
-        
-        // 両方のバッファをステレオに統一
-        const stereo1 = this.convertToStereo(track1Buffer);
-        const stereo2 = this.convertToStereo(track2Buffer);
-        
-        // 2つのバッファの長い方を基準にする
-        const maxLength = Math.max(stereo1.length, stereo2.length);
-        const mixedBuffer = this.audioContext.createBuffer(2, maxLength, sampleRate);
-
-        for (let channel = 0; channel < 2; channel++) {
-            const track1Data = stereo1.getChannelData(channel);
-            const track2Data = stereo2.getChannelData(channel);
-            const mixedData = mixedBuffer.getChannelData(channel);
-
-            for (let i = 0; i < maxLength; i++) {
-                const track1Value = i < track1Data.length ? track1Data[i] : 0;
-                const track2Value = i < track2Data.length ? track2Data[i] : 0;
-                // 2つのトラックをミックス（合計が1.0を超えないようにクリッピング）
-                mixedData[i] = Math.max(-1, Math.min(1, track1Value + track2Value));
-            }
-        }
-
-        return mixedBuffer;
-    }
-
-    // ミックスしたバッファを保存
-    saveMixedBuffer(mixedBuffer, filename = 'se_editor_output.wav') {
-        const wav = this.bufferToWav(mixedBuffer);
-        const blob = new Blob([wav], { type: 'audio/wav' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
 }
-

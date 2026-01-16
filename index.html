@@ -3,407 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SE-Editor - 効果音エディタ</title>
+    <title>Audio to MIDI Converter</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>SE-Editor - 効果音エディタ</h1>
-            <p class="subtitle">Web上で動作する効果音エディタ by <a href="https://github.com/sponsors/tatmos">tatmos</a></p>
-            <div class="app-version">v1.0.0</div>
+            <h1>Audio to MIDI Converter</h1>
+            <p class="subtitle">オーディオファイルからMIDIを生成</p>
         </header>
 
         <div class="controls-panel">
             <div class="file-controls">
-                <label for="file-input-1" class="btn btn-primary">
-                    <!-- iOS系ブラウザでwav/mp3がグレーアウトしないように拡張子も明示 -->
-                    <input type="file" id="file-input-1" accept=".wav,.mp3,audio/*" hidden>
-                    元波形1をアップロード
+                <label for="file-input" class="btn btn-primary">
+                    <input type="file" id="file-input" accept=".wav,.mp3,audio/*" hidden>
+                    WAVファイルをアップロード
                 </label>
-                <button id="save-btn" class="btn btn-secondary" disabled>ファイル保存</button>
-                <input type="text" id="filename-input" class="filename-input" placeholder="se_editor_output.wav" value="se_editor_output.wav" disabled>
-            </div>
-
-            <div class="playback-controls">
                 <button id="play-btn" class="btn btn-play" disabled>▶ 再生</button>
                 <button id="stop-btn" class="btn btn-stop" disabled>■ 停止</button>
+                <button id="export-midi-btn" class="btn btn-secondary" disabled>MIDIに書き出す</button>
             </div>
         </div>
 
         <div class="waveform-container">
             <div class="original-waveform-container">
                 <div class="track-header">
-                    <div class="track-label">元波形1（利用範囲指定）</div>
-                    <button id="clear-original-1" class="clear-btn" title="元波形1をクリア">✕</button>
+                    <div class="track-label">波形（範囲選択）</div>
+                    <button id="clear-audio" class="clear-btn" title="オーディオをクリア" disabled>✕</button>
                 </div>
-                <div class="waveform-wrapper drop-zone" id="original-drop-zone-1">
-                    <button class="drop-overlay" id="drop-overlay-1">波形をアップロード</button>
-                    <canvas id="original-waveform-1" class="waveform-canvas"></canvas>
+                <div class="waveform-wrapper drop-zone" id="drop-zone">
+                    <button class="drop-overlay" id="drop-overlay">波形をアップロード</button>
+                    <canvas id="waveform-canvas" class="waveform-canvas"></canvas>
                 </div>
-                <div id="ruler-original-1" class="time-ruler"></div>
-            </div>
-            
-            <div class="add-waveform-container">
-                <button id="add-waveform-2-btn" class="btn btn-secondary">+ 元波形2を追加</button>
-            </div>
-            
-            <div class="original-waveform-container hidden" id="original-waveform-container-2">
-                <div class="track-header">
-                    <div class="track-label">元波形2（利用範囲指定）</div>
-                    <button id="clear-original-2" class="clear-btn" title="元波形2をクリア">✕</button>
-                </div>
-                <div class="waveform-wrapper drop-zone" id="original-drop-zone-2">
-                    <button class="drop-overlay" id="drop-overlay-2">波形をアップロード</button>
-                    <canvas id="original-waveform-2" class="waveform-canvas"></canvas>
-                </div>
-                <div id="ruler-original-2" class="time-ruler"></div>
-            </div>
-            
-            <div class="track-container">
-                <div class="track-sidebar">
-                    <div class="track-level-meters">
-                        <div class="level-meter-wrapper">
-                            <div class="level-meter-label">L</div>
-                            <div id="level-meter-track1-l" class="level-meter">
-                                <div class="level-bar"></div>
-                            </div>
-                        </div>
-                        <div class="level-meter-wrapper">
-                            <div class="level-meter-label">R</div>
-                            <div id="level-meter-track1-r" class="level-meter">
-                                <div class="level-bar"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <button id="mute-track1" class="speaker-btn" title="トラック1のミュート (M)">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                        </svg>
-                    </button>
-                </div>
-                <div class="track-content">
-                    <div class="track-header">
-                        <div class="track-label">トラック1</div>
-                        <button id="toggle-settings-track1" class="detail-btn" title="設定を開く/閉じる">▼</button>
-                    </div>
-                    <div class="track-settings hidden" id="track-settings-1">
-                        <div class="pitch-algorithm-group">
-                            <label for="pitch-algorithm-track1">アルゴリズム:</label>
-                            <select id="pitch-algorithm-track1" class="pitch-algorithm-select" disabled>
-                                <option value="resample">リサンプル</option>
-                                <option value="pitchshift">ピッチシフト</option>
-                            </select>
-                        </div>
-                        <div class="pitch-control-group">
-                            <label for="pitch-transpose-track1">移調:</label>
-                            <div class="pitch-value-control">
-                                <button id="pitch-transpose-track1-minus" class="pitch-btn" disabled>-1</button>
-                                <input type="number" id="pitch-transpose-track1" class="pitch-input" value="0" min="-24" max="24" step="1" disabled>
-                                <button id="pitch-transpose-track1-plus" class="pitch-btn" disabled>+1</button>
-                            </div>
-                            <span>セミトーン</span>
-                            <div class="pitch-value-control">
-                                <button id="pitch-cent-track1-minus" class="pitch-btn" disabled>-10</button>
-                                <input type="number" id="pitch-cent-track1" class="pitch-input" value="0" min="-50" max="50" step="1" disabled>
-                                <button id="pitch-cent-track1-plus" class="pitch-btn" disabled>+10</button>
-                            </div>
-                            <span>cent</span>
-                        </div>
-                    </div>
-                    <div class="waveform-wrapper">
-                        <canvas id="waveform-track1" class="waveform-canvas"></canvas>
-                    </div>
-                    <div id="ruler-track1" class="time-ruler"></div>
-                </div>
-            </div>
-
-            <div class="add-track-container">
-                <button id="add-track-2-btn" class="btn btn-secondary">+ トラック2を追加</button>
-            </div>
-
-            <div class="track-container hidden" id="track-container-2">
-                <div class="track-sidebar">
-                    <div class="track-level-meters">
-                        <div class="level-meter-wrapper">
-                            <div class="level-meter-label">L</div>
-                            <div id="level-meter-track2-l" class="level-meter">
-                                <div class="level-bar"></div>
-                            </div>
-                        </div>
-                        <div class="level-meter-wrapper">
-                            <div class="level-meter-label">R</div>
-                            <div id="level-meter-track2-r" class="level-meter">
-                                <div class="level-bar"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <button id="mute-track2" class="speaker-btn" title="トラック2のミュート (M)">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                        </svg>
-                    </button>
-                </div>
-                <div class="track-content">
-                    <div class="track-header">
-                        <div class="track-label">トラック2</div>
-                        <div class="track-header-buttons">
-                            <button id="toggle-settings-track2" class="detail-btn" title="設定を開く/閉じる">▼</button>
-                            <button id="remove-track-2-btn" class="clear-btn" title="トラック2を削除">✕</button>
-                        </div>
-                    </div>
-                    <div class="track-settings hidden" id="track-settings-2">
-                        <div class="pitch-algorithm-group">
-                            <label for="pitch-algorithm-track2">アルゴリズム:</label>
-                            <select id="pitch-algorithm-track2" class="pitch-algorithm-select" disabled>
-                                <option value="resample">リサンプル</option>
-                                <option value="pitchshift">ピッチシフト</option>
-                            </select>
-                        </div>
-                        <div class="pitch-control-group">
-                            <label for="pitch-transpose-track2">移調:</label>
-                            <div class="pitch-value-control">
-                                <button id="pitch-transpose-track2-minus" class="pitch-btn" disabled>-1</button>
-                                <input type="number" id="pitch-transpose-track2" class="pitch-input" value="0" min="-24" max="24" step="1" disabled>
-                                <button id="pitch-transpose-track2-plus" class="pitch-btn" disabled>+1</button>
-                            </div>
-                            <span>セミトーン</span>
-                            <div class="pitch-value-control">
-                                <button id="pitch-cent-track2-minus" class="pitch-btn" disabled>-10</button>
-                                <input type="number" id="pitch-cent-track2" class="pitch-input" value="0" min="-50" max="50" step="1" disabled>
-                                <button id="pitch-cent-track2-plus" class="pitch-btn" disabled>+10</button>
-                            </div>
-                            <span>cent</span>
-                        </div>
-                    </div>
-                    <div class="waveform-wrapper">
-                        <canvas id="waveform-track2" class="waveform-canvas"></canvas>
-                    </div>
-                    <div id="ruler-track2" class="time-ruler"></div>
-                </div>
-            </div>
-        </div>
-
-
-        <!-- 3-Band MultiBand Comp -->
-        <div class="multiband-comp-container">
-            <div class="track-header">
-                <div class="track-label">3-Band MultiBand Up/Down Comp</div>
-                <div class="track-header-buttons">
-                    <button id="comp-bypass" class="bypass-btn" disabled>Bypass</button>
-                    <button id="comp-detail-btn" class="detail-btn" disabled>▼</button>
-                </div>
-            </div>
-            <div class="comp-main-controls">
-                <div class="comp-gain-controls">
-                    <div class="comp-gain-control">
-                        <label for="comp-h-gain">H Gain:</label>
-                        <input type="range" id="comp-h-gain" class="slider" min="0" max="200" value="100" disabled>
-                        <span id="comp-h-gain-value">100%</span>
-                    </div>
-                    <div class="comp-gain-control">
-                        <label for="comp-m-gain">M Gain:</label>
-                        <input type="range" id="comp-m-gain" class="slider" min="0" max="200" value="100" disabled>
-                        <span id="comp-m-gain-value">100%</span>
-                    </div>
-                    <div class="comp-gain-control">
-                        <label for="comp-l-gain">L Gain:</label>
-                        <input type="range" id="comp-l-gain" class="slider" min="0" max="200" value="100" disabled>
-                        <span id="comp-l-gain-value">100%</span>
-                    </div>
-                </div>
-                <div class="comp-mix-control">
-                    <label for="comp-mix">Mix:</label>
-                    <input type="range" id="comp-mix" class="slider" min="0" max="100" value="100" disabled>
-                    <span id="comp-mix-value">100%</span>
-                </div>
-            </div>
-            <div class="multiband-details" id="multiband-details" style="display: none;">
-            <div class="multiband-controls">
-                <div class="band-control">
-                    <label>H (High)</label>
-                    <div class="comp-row">
-                        <label>Up:</label>
-                        <input type="range" id="comp-h-up" class="slider" min="0" max="100" value="0" disabled>
-                        <span id="comp-h-up-value">0%</span>
-                    </div>
-                    <div class="comp-row">
-                        <label>Down:</label>
-                        <input type="range" id="comp-h-down" class="slider" min="0" max="100" value="0" disabled>
-                        <span id="comp-h-down-value">0%</span>
-                    </div>
-                    <div class="comp-row">
-                        <label>Gain:</label>
-                        <input type="range" id="comp-h-gain-detail" class="slider" min="0" max="200" value="100" disabled>
-                        <span id="comp-h-gain-detail-value">100%</span>
-                    </div>
-                </div>
-                <div class="band-control">
-                    <label>M (Mid)</label>
-                    <div class="comp-row">
-                        <label>Up:</label>
-                        <input type="range" id="comp-m-up" class="slider" min="0" max="100" value="0" disabled>
-                        <span id="comp-m-up-value">0%</span>
-                    </div>
-                    <div class="comp-row">
-                        <label>Down:</label>
-                        <input type="range" id="comp-m-down" class="slider" min="0" max="100" value="0" disabled>
-                        <span id="comp-m-down-value">0%</span>
-                    </div>
-                    <div class="comp-row">
-                        <label>Gain:</label>
-                        <input type="range" id="comp-m-gain-detail" class="slider" min="0" max="200" value="100" disabled>
-                        <span id="comp-m-gain-detail-value">100%</span>
-                    </div>
-                </div>
-                <div class="band-control">
-                    <label>L (Low)</label>
-                    <div class="comp-row">
-                        <label>Up:</label>
-                        <input type="range" id="comp-l-up" class="slider" min="0" max="100" value="0" disabled>
-                        <span id="comp-l-up-value">0%</span>
-                    </div>
-                    <div class="comp-row">
-                        <label>Down:</label>
-                        <input type="range" id="comp-l-down" class="slider" min="0" max="100" value="0" disabled>
-                        <span id="comp-l-down-value">0%</span>
-                    </div>
-                    <div class="comp-row">
-                        <label>Gain:</label>
-                        <input type="range" id="comp-l-gain-detail" class="slider" min="0" max="200" value="100" disabled>
-                        <span id="comp-l-gain-detail-value">100%</span>
-                    </div>
-                </div>
-            </div>
-            <div class="comp-crossover-controls">
-                <div class="comp-crossover-control">
-                    <label for="comp-low-mid-crossover">Low-Mid Crossover:</label>
-                    <input type="range" id="comp-low-mid-crossover" class="slider" min="100" max="2000" value="500" step="10" disabled>
-                    <span id="comp-low-mid-crossover-value">500 Hz</span>
-                </div>
-                <div class="comp-crossover-control">
-                    <label for="comp-mid-high-crossover">Mid-High Crossover:</label>
-                    <input type="range" id="comp-mid-high-crossover" class="slider" min="1000" max="10000" value="3000" step="50" disabled>
-                    <span id="comp-mid-high-crossover-value">3000 Hz</span>
-                </div>
-            </div>
-            </div>
-        </div>
-
-        <!-- 空間デザイン -->
-        <div class="spatial-design-container">
-            <div class="track-header">
-                <div class="track-label">空間デザイン（X-Z平面）</div>
-                <div class="track-header-buttons">
-                    <button id="spatial-bypass" class="bypass-btn" disabled>Bypass</button>
-                    <button id="toggle-spatial-design" class="detail-btn" title="表示/非表示">▼</button>
-                </div>
-            </div>
-            <div class="spatial-controls hidden" id="spatial-controls">
-                <div class="spatial-mode-control">
-                    <label for="spatial-mode">モード:</label>
-                    <select id="spatial-mode" class="spatial-mode-select" disabled>
-                        <option value="mono-pan">LRミックス→モノラル→音像定位</option>
-                        <option value="channel-volume">チャンネルボリューム変更のみ</option>
-                        <option value="stereo-width">ステレオ幅指定（L,R独立配置）</option>
-                    </select>
-                </div>
-                <canvas id="spatial-canvas" class="spatial-canvas"></canvas>
-                <div class="spatial-mix-control">
-                    <label for="reverb-mix">残響効果 Mix:</label>
-                    <input type="range" id="reverb-mix" class="slider" min="0" max="100" value="0" disabled>
-                    <span id="reverb-mix-value">0%</span>
-                </div>
-                <div class="spatial-stereo-width-control hidden" id="stereo-width-control">
-                    <label for="stereo-width">ステレオ幅:</label>
-                    <input type="range" id="stereo-width" class="slider" min="0" max="200" value="100" disabled>
-                    <span id="stereo-width-value">100%</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- スペクトラムアナライザー -->
-        <div class="spectrum-analyzer-container">
-            <div class="track-header">
-                <div class="track-label">加工後の音解析</div>
-                <div class="spectrum-controls-header">
-                    <div class="spectrum-mode-buttons">
-                        <button id="spectrum-mode-spectrum" class="spectrum-mode-btn active" title="スペクトラム表示">スペクトラム</button>
-                        <button id="spectrum-mode-sonogram" class="spectrum-mode-btn" title="ソノグラム表示">ソノグラム</button>
-                        <button id="spectrum-mode-waveform" class="spectrum-mode-btn" title="波形表示">波形</button>
-                    </div>
-                    <div class="spectrum-channel-buttons">
-                        <button id="spectrum-channel-mix" class="spectrum-channel-btn active" title="Mix（左右ミックス）">Mix</button>
-                        <button id="spectrum-channel-l" class="spectrum-channel-btn" title="左チャンネル">L</button>
-                        <button id="spectrum-channel-r" class="spectrum-channel-btn" title="右チャンネル">R</button>
-                    </div>
-                </div>
-            </div>
-            <div class="spectrum-controls">
-                <canvas id="spectrum-canvas" class="spectrum-canvas"></canvas>
-                <div class="sonogram-update-control" id="sonogram-update-control">
-                    <label for="sonogram-update-rate">更新頻度:</label>
-                    <input type="range" id="sonogram-update-rate" class="slider" min="1" max="10" value="1" step="1">
-                    <span id="sonogram-update-rate-value">1</span>
-                    <span>フレームごと</span>
-                    <label for="sonogram-scale" style="margin-left:12px;">周波数スケール:</label>
-                    <input type="range" id="sonogram-scale" class="slider" min="0" max="100" value="70" step="1">
-                    <span id="sonogram-scale-value">70</span>
-                    <span>%Log</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- 加工後のレベルメーター -->
-        <div class="processed-level-meter-container">
-            <div class="track-header">
-                <div class="track-label">加工後のレベルメーター</div>
-            </div>
-            <div class="processed-level-meters" id="processed-level-meters">
-                <!-- 動的に生成される -->
+                <div id="ruler" class="time-ruler"></div>
             </div>
         </div>
 
         <div id="status" class="status"></div>
-        
-        <!-- ファイル上書き確認ダイアログ -->
-        <div id="overwrite-dialog" class="overwrite-dialog hidden">
-            <div class="overwrite-dialog-content">
-                <h3>ファイルが既に存在します</h3>
-                <p id="overwrite-filename" class="overwrite-filename"></p>
-                <div class="overwrite-buttons">
-                    <button id="overwrite-confirm" class="btn btn-secondary">上書き</button>
-                    <button id="overwrite-rename" class="btn btn-primary">別名で保存</button>
-                    <button id="overwrite-cancel" class="btn btn-secondary">キャンセル</button>
-                </div>
-            </div>
-        </div>
-
     </div>
 
-    <script src="waveformDrawer.js"></script>
-    <script src="waveformRenderer.js"></script>
-    <script src="track1Processor.js"></script>
-    <script src="track2Processor.js"></script>
+    <script src="originalWaveformViewer.js"></script>
     <script src="audioPlayer.js"></script>
     <script src="audioProcessor.js"></script>
-    <script src="originalWaveformViewer.js"></script>
-    <script src="regionController.js"></script>
-    <!-- ピッチトランスポーズ -->
-    <script src="pitchTransposeUI.js"></script>
-    <script src="pitchTransposeProcessor.js"></script>
-    <!-- 3-Band MultiBand Comp -->
-    <script src="multibandCompUI.js"></script>
-    <script src="multibandCompProcessor.js"></script>
-    <!-- スペクトラムアナライザー -->
-    <script src="spectrumAnalyzer.js"></script>
-    <!-- 空間デザイン -->
-    <script src="spatialDesignUI.js"></script>
-    <script src="spatialDesignProcessor.js"></script>
     <script src="uiController.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
-
