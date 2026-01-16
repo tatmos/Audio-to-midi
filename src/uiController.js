@@ -1,10 +1,12 @@
 import { AudioProcessor } from './audioProcessor.js';
 import { AudioPlayer } from './audioPlayer.js';
+import { MidiConverter } from './midiConverter.js';
 
 // UI制御クラス
 class UIController {
     constructor(app) {
         this.app = app;
+        this.midiConverter = new MidiConverter();
         this.initializeElements();
         this.setupEventListeners();
     }
@@ -259,9 +261,24 @@ class UIController {
                 return;
             }
 
-            // MIDI変換（TODO: 実際の変換ロジックを実装）
-            // 現在はスタブとして、簡単なMIDIファイルを生成
-            const midiData = this.generateMidiStub(rangeBuffer);
+            // Basic Pitchの初期化（初回のみ）
+            this.showStatus('Basic Pitchを初期化中...', 'info');
+            await this.midiConverter.initialize();
+
+            // オーディオからMIDIノートに変換
+            this.showStatus('オーディオを解析中...', 'info');
+            const notes = await this.midiConverter.convertAudioToMidiNotes(
+                rangeBuffer,
+                this.app.audioProcessor, // リサンプリング用にAudioProcessorを渡す
+                (progress) => {
+                    const percent = Math.round(progress * 100);
+                    this.showStatus(`解析中... ${percent}%`, 'info');
+                }
+            );
+
+            // MIDIノートからMIDIファイルを生成
+            this.showStatus('MIDIファイルを構築中...', 'info');
+            const midiData = this.midiConverter.generateMidiFile(notes);
             
             // MIDIファイルをダウンロード
             const blob = new Blob([midiData], { type: 'audio/midi' });
@@ -274,40 +291,11 @@ class UIController {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            this.showStatus('MIDIファイルを出力しました', 'success');
+            this.showStatus(`MIDIファイルを出力しました（${notes.length}ノート）`, 'success');
         } catch (error) {
             this.showStatus('MIDI出力エラー: ' + error.message, 'error');
             console.error(error);
         }
-    }
-
-    // MIDI生成のスタブ（後で実装予定）
-    generateMidiStub(audioBuffer) {
-        // 簡易的なMIDIファイル（空のトラック）を生成
-        // TODO: 実際のオーディオからMIDIへの変換ロジックを実装
-        
-        // MIDIファイルヘッダー（最小限の構造）
-        const midiHeader = new Uint8Array([
-            0x4D, 0x54, 0x68, 0x64, // "MThd"
-            0x00, 0x00, 0x00, 0x06, // ヘッダー長
-            0x00, 0x01,             // フォーマット（シングルトラック）
-            0x00, 0x01,             // トラック数
-            0x00, 0xC0              // 分解能（192 ticks/quarter note）
-        ]);
-
-        // トラックチャンクヘッダー
-        const trackChunk = new Uint8Array([
-            0x4D, 0x54, 0x72, 0x6B, // "MTrk"
-            0x00, 0x00, 0x00, 0x04, // トラック長
-            0x00, 0xFF, 0x2F, 0x00  // エンドオブトラック
-        ]);
-
-        // 結合
-        const midiData = new Uint8Array(midiHeader.length + trackChunk.length);
-        midiData.set(midiHeader, 0);
-        midiData.set(trackChunk, midiHeader.length);
-
-        return midiData;
     }
 
     enableControls() {
