@@ -96,6 +96,86 @@ class AudioProcessor {
 
         return monoBuffer;
     }
+
+    // オーディオからテンポ（BPM）を推定
+    estimateTempo(audioBuffer) {
+        if (!audioBuffer) {
+            return null;
+        }
+
+        // モノラルに変換
+        const monoBuffer = this.convertToMono(audioBuffer);
+        const sampleRate = monoBuffer.sampleRate;
+        const audioData = monoBuffer.getChannelData(0);
+        const duration = monoBuffer.duration;
+
+        // 短すぎる場合は推定できない
+        if (duration < 2) {
+            return null;
+        }
+
+        // エネルギーの変化を計算（ビート検出用）
+        const windowSize = Math.floor(sampleRate * 0.1); // 100msウィンドウ
+        const hopSize = Math.floor(windowSize / 4); // オーバーラップ
+        const energy = [];
+
+        // 各ウィンドウのエネルギーを計算
+        for (let i = 0; i < audioData.length - windowSize; i += hopSize) {
+            let sum = 0;
+            for (let j = 0; j < windowSize; j++) {
+                const value = audioData[i + j];
+                sum += value * value;
+            }
+            energy.push(sum / windowSize);
+        }
+
+        // エネルギーの差分（変化率）を計算
+        const energyDiff = [];
+        for (let i = 1; i < energy.length; i++) {
+            const diff = Math.max(0, energy[i] - energy[i - 1]);
+            energyDiff.push(diff);
+        }
+
+        // オートコリレーションでビート間隔を検出
+        const minBPM = 60;
+        const maxBPM = 200;
+        const minInterval = Math.floor((60 / maxBPM) * sampleRate / hopSize);
+        const maxInterval = Math.floor((60 / minBPM) * sampleRate / hopSize);
+
+        let bestScore = 0;
+        let bestInterval = 0;
+
+        // 各可能なビート間隔をテスト
+        for (let interval = minInterval; interval <= maxInterval && interval < energyDiff.length; interval++) {
+            let score = 0;
+            let count = 0;
+
+            // オートコリレーション計算
+            for (let i = 0; i < energyDiff.length - interval; i++) {
+                score += energyDiff[i] * energyDiff[i + interval];
+                count++;
+            }
+
+            if (count > 0) {
+                score /= count;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestInterval = interval;
+                }
+            }
+        }
+
+        if (bestInterval === 0) {
+            return null;
+        }
+
+        // ビート間隔からBPMを計算
+        const beatIntervalSeconds = (bestInterval * hopSize) / sampleRate;
+        const estimatedBPM = Math.round(60 / beatIntervalSeconds);
+
+        // 範囲内に制限
+        return Math.max(60, Math.min(200, estimatedBPM));
+    }
 }
 
 export { AudioProcessor };

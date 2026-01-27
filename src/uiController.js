@@ -16,6 +16,7 @@ class UIController {
         this.playBtn = document.getElementById('play-btn');
         this.stopBtn = document.getElementById('stop-btn');
         this.exportMidiBtn = document.getElementById('export-midi-btn');
+        this.detectTempoBtn = document.getElementById('detect-tempo-btn');
         this.clearAudioBtn = document.getElementById('clear-audio');
         this.status = document.getElementById('status');
         this.dropZone = document.getElementById('drop-zone');
@@ -28,6 +29,10 @@ class UIController {
         this.playBtn.addEventListener('click', () => this.playPreview());
         this.stopBtn.addEventListener('click', () => this.stopPreview());
         this.exportMidiBtn.addEventListener('click', () => this.exportToMidi());
+        
+        if (this.detectTempoBtn) {
+            this.detectTempoBtn.addEventListener('click', () => this.detectTempo());
+        }
         
         if (this.clearAudioBtn) {
             this.clearAudioBtn.addEventListener('click', () => this.clearAudio());
@@ -239,6 +244,59 @@ class UIController {
         this.showStatus('オーディオをクリアしました', 'info');
     }
 
+    async detectTempo() {
+        if (!this.app.originalBuffer) {
+            this.showStatus('オーディオファイルが読み込まれていません', 'error');
+            return;
+        }
+
+        if (!this.app.audioProcessor) {
+            this.showStatus('AudioProcessorが初期化されていません', 'error');
+            return;
+        }
+
+        try {
+            this.showStatus('テンポを推定中...', 'info');
+            this.detectTempoBtn.disabled = true;
+
+            // 選択範囲のバッファを使用（範囲が選択されている場合）
+            const range = this.app.getSelectedRange();
+            let bufferToAnalyze = this.app.originalBuffer;
+
+            if (range && range.duration > 0) {
+                bufferToAnalyze = this.app.getSelectedRangeBuffer();
+            }
+
+            if (!bufferToAnalyze) {
+                this.showStatus('分析するオーディオがありません', 'error');
+                this.detectTempoBtn.disabled = false;
+                return;
+            }
+
+            // テンポを推定
+            const estimatedBPM = this.app.audioProcessor.estimateTempo(bufferToAnalyze);
+
+            if (estimatedBPM) {
+                // テンポ入力欄に設定
+                const tempoInput = document.getElementById('tempo-input');
+                if (tempoInput) {
+                    tempoInput.value = estimatedBPM;
+                    this.showStatus(`テンポを推定しました: ${estimatedBPM} BPM`, 'success');
+                } else {
+                    this.showStatus(`推定テンポ: ${estimatedBPM} BPM`, 'success');
+                }
+            } else {
+                this.showStatus('テンポの推定に失敗しました。オーディオが短すぎるか、ビートが検出できませんでした。', 'error');
+            }
+
+            this.detectTempoBtn.disabled = false;
+        } catch (error) {
+            this.showStatus('テンポ推定エラー: ' + error.message, 'error');
+            console.error(error);
+            this.detectTempoBtn.disabled = false;
+        }
+    }
+
     async exportToMidi() {
         if (!this.app.originalBuffer) {
             this.showStatus('オーディオファイルが読み込まれていません', 'error');
@@ -276,9 +334,13 @@ class UIController {
                 }
             );
 
+            // テンポを取得（デフォルトは120 BPM、小数点対応）
+            const tempoInput = document.getElementById('tempo-input');
+            const tempoBPM = tempoInput ? parseFloat(tempoInput.value) || 120 : 120;
+
             // MIDIノートからMIDIファイルを生成
             this.showStatus('MIDIファイルを構築中...', 'info');
-            const midiData = this.midiConverter.generateMidiFile(notes);
+            const midiData = this.midiConverter.generateMidiFile(notes, tempoBPM);
             
             // MIDIファイルをダウンロード
             const blob = new Blob([midiData], { type: 'audio/midi' });
@@ -301,6 +363,9 @@ class UIController {
     enableControls() {
         this.playBtn.disabled = false;
         this.exportMidiBtn.disabled = false;
+        if (this.detectTempoBtn) {
+            this.detectTempoBtn.disabled = false;
+        }
         if (this.clearAudioBtn) {
             this.clearAudioBtn.disabled = false;
         }
@@ -310,6 +375,9 @@ class UIController {
         this.playBtn.disabled = true;
         this.stopBtn.disabled = true;
         this.exportMidiBtn.disabled = true;
+        if (this.detectTempoBtn) {
+            this.detectTempoBtn.disabled = true;
+        }
         if (this.clearAudioBtn) {
             this.clearAudioBtn.disabled = true;
         }

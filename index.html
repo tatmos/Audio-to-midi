@@ -22,6 +22,11 @@
                 </label>
                 <button id="play-btn" class="btn btn-play" disabled>▶ 再生</button>
                 <button id="stop-btn" class="btn btn-stop" disabled>■ 停止</button>
+                <div class="tempo-control">
+                    <label for="tempo-input">テンポ (BPM):</label>
+                    <input type="number" id="tempo-input" min="20" max="300" step="0.001" value="120" class="tempo-input" title="小数点第3位まで入力可能">
+                    <button id="detect-tempo-btn" class="btn btn-tempo" disabled title="オーディオからテンポを推定">🎵 推定</button>
+                </div>
                 <button id="export-midi-btn" class="btn btn-secondary" disabled>MIDIに書き出す</button>
             </div>
         </div>

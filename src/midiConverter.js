@@ -125,7 +125,8 @@ class MidiConverter {
     }
 
     // MIDIノートからMIDIファイル（バイナリ）を生成
-    generateMidiFile(notes) {
+    // tempoBPM: テンポ（BPM、デフォルトは120）
+    generateMidiFile(notes, tempoBPM = 120) {
         if (!notes || notes.length === 0) {
             // ノートがない場合は空のMIDIファイルを返す
             return this.generateEmptyMidiFile();
@@ -135,7 +136,7 @@ class MidiConverter {
         // フォーマット: 1 (シングルトラック)
         // 分解能: 480 ticks/quarter note
         const ticksPerQuarter = 480;
-        const tempo = 120; // BPM
+        const tempo = Math.max(20, Math.min(300, tempoBPM)); // BPMを20-300の範囲に制限
 
         // ノートをソート（時間順）
         // Basic Pitchのノートは startTimeSeconds プロパティを持つ
@@ -144,12 +145,24 @@ class MidiConverter {
         // トラックイベントを構築
         const trackEvents = [];
 
-        // テンポ設定（120 BPM = 500,000 microseconds per quarter note）
+        // テンポ設定
+        // BPMからmicroseconds per quarter noteへの変換: 60,000,000 / BPM
+        // 小数点を含むBPMをサポートするため、Math.roundを使用（より正確な丸め）
+        const microsecondsPerQuarter = Math.round(60000000 / tempo);
+        // 範囲チェック（MIDI仕様: 1 ～ 16,777,215）
+        const clampedMicroseconds = Math.max(1, Math.min(16777215, microsecondsPerQuarter));
+        // 3バイトで表現（24ビット）
+        const tempoData = [
+            (clampedMicroseconds >> 16) & 0xFF, // 上位8ビット
+            (clampedMicroseconds >> 8) & 0xFF,  // 中位8ビット
+            clampedMicroseconds & 0xFF           // 下位8ビット
+        ];
+        
         trackEvents.push({
             deltaTime: 0,
             type: 'meta',
             metaType: 0x51, // Set Tempo
-            data: [0x07, 0xA1, 0x20] // 500,000 in 3 bytes
+            data: tempoData
         });
 
         // 各ノートをMIDIイベントに変換

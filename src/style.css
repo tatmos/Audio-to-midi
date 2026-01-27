@@ -57,6 +57,34 @@ header h1 {
     display: flex;
     gap: 10px;
     align-items: center;
+    flex-wrap: wrap;
+}
+
+.tempo-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tempo-control label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+}
+
+.tempo-input {
+    width: 80px;
+    padding: 8px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: center;
+    transition: border-color 0.3s ease;
+}
+
+.tempo-input:focus {
+    outline: none;
+    border-color: #667eea;
 }
 
 .filename-input {
@@ -134,6 +162,17 @@ header h1 {
 
 .btn-stop:hover:not(:disabled) {
     background: #c82333;
+}
+
+.btn-tempo {
+    background: #ffc107;
+    color: #333;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.btn-tempo:hover:not(:disabled) {
+    background: #e0a800;
 }
 
 .waveform-container {
